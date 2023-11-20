@@ -1,0 +1,51 @@
+= OpenTofu configuration
+
+== Authentication
+
+WARNING: Make sure you are in the `direnv` environment!
+
+```
+gcloud --project ${GOOGLE_PROJECT} \
+  iam service-accounts keys create ${GOOGLE_CREDENTIALS} \
+  --iam-account opentofu@${GOOGLE_PROJECT}.iam.gserviceaccount.com
+```
+
+== OpenTofu state
+
+The state is synced on a bucket on GCP. This is set up by the configuration in
+`bootstrap/`. You might need to unset `GOOGLE_CREDENTIALS`. If some resources
+already exist, they can be imported into the OpenTofu state with
+`tofu import` (in `bootstrap/`).
+
+NOTE: The state of this configuration is not to be confused with what it
+creates: a place to store the OpenTofu state for the rest of the configuration.
+The former is stored in `bootstrap/` and versioned in the repository while the
+latter is the bucket created by the configuration in that directory.
+
+=== How the service account was initialised
+
+```
+gcloud --project ${GOOGLE_PROJECT} \
+  iam service-accounts create opentofu --display-name "OpenTofu admin account"
+```
+
+Permissions (`roles/viewer` in this example) are added with:
+
+```
+gcloud projects add-iam-policy-binding ${GOOGLE_PROJECT} \
+  --member serviceAccount:opentofu@${GOOGLE_PROJECT}.iam.gserviceaccount.com \
+  --role roles/viewer
+```
+
+To list roles: `gcloud iam roles list`.
+
+The roles the service account currently has are listed in
+`production/opentofu_roles`. To synchronise this file, run the following
+command. This is just in case the account gets deleted and needs to be
+recreated.
+
+```
+gcloud projects get-iam-policy ${GOOGLE_PROJECT} \
+  --filter 'bindings.members:opentofu' --flatten 'bindings[].members' \
+  --format 'table(bindings.role)' > opentofu_roles
+```

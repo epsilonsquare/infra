@@ -1,0 +1,155 @@
+= Installing NixOS on physical servers
+:source-highlighter: highlightjs
+
+== Getting the system ready
+
+The first step is to install Ubuntu from the admin panel of the hoster. Rescue
+mode from OVH doesn't work for some reason.
+
+If the server uses UEFI:
+
+[source,bash]
+----
+dd if=/dev/zero of=/dev/sdb count=100
+parted /dev/sdb -- mklabel gpt
+parted /dev/sdb -- mkpart primary 512MiB 100%
+parted /dev/sdb -- mkpart bios_grub 1MiB 512MiB
+parted /dev/sdb -- set 2 esp on
+# Repeat on additional disks with `-- mkpart primary 1MiB 100%`.
+----
+
+If the server uses MBR:
+
+[source,bash]
+----
+dd if=/dev/zero of=/dev/sdb count=100
+parted /dev/sdb -- mklabel msdos
+parted /dev/sdb -- mkpart primary 1MiB 100%
+----
+
+[source,bash]
+----
+reboot # To get fresh /etc/fstab.
+
+dd if=/dev/zero of=/dev/sda count=100
+----
+
+We'll use the second disk to install the system on BtrFS. (*No* swap!)
+
+[source,bash]
+----
+mkfs.fat /dev/sdb2 # mkfs.fat if using UEFI.
+mkfs.btrfs -L pool /dev/sdb1 # /dev/sdc1 ...
+mount -t btrfs /dev/sdb1 /mnt
+btrfs subvolume create /mnt/root
+btrfs subvolume create /mnt/var
+btrfs subvolume create /mnt/home
+btrfs subvolume create /mnt/nix
+btrfs subvolume create /mnt/openebs-local
+umount /mnt
+mount -t btrfs -o subvol=root /dev/sdb1 /mnt
+mkdir /mnt/var
+mount -t btrfs -o subvol=var /dev/sdb1 /mnt/var
+mkdir /mnt/home
+mount -t btrfs -o subvol=home /dev/sdb1 /mnt/home
+mkdir -p /mnt/nix
+mount -t btrfs -o subvol=nix /dev/sdb1 /mnt/nix
+mkdir -p /mnt/var/openebs/local
+mount -t btrfs -o subvol=openebs-local /dev/sdb1 /mnt/var/openebs/local
+mkdir /mnt/boot
+# If UEFI:
+modprobe msdos
+mount -t msdos /dev/sdb2 /mnt/boot
+----
+
+`/var` has its own subvolume so we can take snapshots of it for backups.
+
+== Install NixOS
+
+The next step is to install Nix. It can't be installed by `root` but can by a
+user with sudo access.
+
+[source,bash]
+----
+# Create the user with sudo access.
+adduser nix # Give it a random password, just in case
+echo 'nix ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+su nix
+sudo whoami # just to check, sudo works
+
+# Install Nix
+bash <(curl -L https://nixos.org/nix/install) --daemon
+. /etc/bashrc_profile
+
+# Replace with relevant version of NixOS.
+nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
+nix-channel --update
+
+# Install nixos-generate-config and nixos-install.
+nix-env -f '<nixpkgs>' -iA nixos-install-tools
+
+# We're ready to install NixOS.
+# See above instructions for how to mount /mnt properly.
+sudo `which nixos-generate-config` --root /mnt
+# Edit the configuration files as explained below.
+sudo PATH="$PATH" NIX_PATH="nixpkgs=/home/nix/.nix-defexpr/channels/nixpkgs" `which nixos-install` --root /mnt \
+  --no-root-passwd
+----
+
+You can reboot the machine now and hope it boots on NixOS.
+
+=== Initial NixOS configuration
+
+`nixos-generate-config` generates basic configuration files in
+`/mnt/etc/nixos/` which needs to be modified.
+
+Check that the disks are correct in `hardware-configuration.nix` and remove any
+swap device. You might find the command `blkid` useful. (The reason we want to
+get rid of swap devices is that we don't have any in the final setting so they
+would come from `/dev/sda` which will be wiped in some next step.)
+
+In `configuration.nix`, you need to give yourself SSH access and specify on
+which disk GRUB should be installed.
+
+[source,nix]
+----
+services.openssh.enable = true;
+services.openssh.settings.PasswordAuthentication = false;
+users.users.root.openssh.authorizedKeys.keys = [
+  "YOUR_SSH_PUBLIC_KEY"
+];
+----
+
+In the `hardware-configuration.nix`, you should add something like the following.
+Check also that the `subvol=` options are correct as `nixos-generate-config`
+messes up sometimes.
+
+[source,nix]
+----
+# For BIOS only.
+boot.loader.grub.enable = true;
+boot.loader.grub.device = "/dev/sdb";
+
+# For UEFI only?
+boot.loader.systemd-boot.enable = true;
+boot.loader.efi.canTouchEfiVariables = true;
+----
+
+WARNING The generated `hardware-configuration.nix` that was generated in this
+section should be copied and commited to
+`nix/hardware-configurations/MACHINE.nix` where `MACHINE` is the name of the
+server such as `hydrogen`. Skip this if you do not intend to deploy to a
+production server.
+
+== Finalising disk setup
+
+First partition the first disk on which the installation system (Ubuntu) was
+installed the same way other disks were partitioned.
+
+[source,bash]
+----
+mount -t btrfs /dev/sdb1 /mnt
+fdisk /dev/sda # Make sure /dev/sda has one partition using the whole disk.
+btrfs device add /dev/sda1 /
+btrfs balance start -dconvert=raid1 -mconvert=raid1 /mnt
+----
