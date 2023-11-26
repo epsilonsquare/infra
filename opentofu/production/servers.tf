@@ -1,0 +1,38 @@
+resource "null_resource" "nix_config" {
+  triggers = {
+    hash = join(
+      ",",
+      [
+        for filename
+        in fileset("${path.module}/../../nix/server-configurations", "**")
+        : filemd5("${path.module}/../../nix/server-configurations/${filename}")
+      ])
+  }
+}
+
+module "deploy_nixos" {
+  source = "github.com/tomferon/terraform-nixos//deploy_nixos?ref=e96dd3edf70f5e10481037024a4ea5490996d18e"
+  hermetic = true
+  target_user = "root"
+  target_host = var.hydrogen_ip
+  ssh_private_key = "-"
+  #ssh_agent = true
+
+  config_pwd           = "${path.module}/../../nix/server-configurations"
+  config               = <<-EOF
+  (builtins.getFlake (builtins.toString ./.)).outputs.packages.hydrogen {
+    servers = {
+      hydrogen = {
+        vpnPublicKey = "PLACEHOLDER";
+        ipAddress = "${var.hydrogen_ip}";
+      };
+    };
+  }
+EOF
+
+  keys = {
+  }
+
+  # Redeploy when any file changes in nix/server-configurations.
+  depends_on = [null_resource.nix_config]
+}

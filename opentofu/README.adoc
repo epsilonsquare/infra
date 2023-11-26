@@ -47,5 +47,5 @@ recreated.
 ```
 gcloud projects get-iam-policy ${GOOGLE_PROJECT} \
   --filter 'bindings.members:opentofu' --flatten 'bindings[].members' \
-  --format 'table(bindings.role)' > opentofu_roles
+  --format 'table(bindings.role)' > gcp_roles
 ```
