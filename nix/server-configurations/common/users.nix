@@ -63,10 +63,7 @@ in
     services.openssh.enable = true;
     services.openssh.settings.PasswordAuthentication = false;
 
-    users.users = builtins.mapAttrs makeUser users // {
-      root.openssh.authorizedKeys.keys =
-        builtins.concatMap (username: users.${username}.sshKeys) administrators;
-    };
+    users.users = builtins.mapAttrs makeUser users;
 
     users.groups = {
       developer = {
@@ -75,6 +72,12 @@ in
       };
 
       wheel.members = administrators;
+    };
+
+    security.sudo = {
+      enable = true;
+      execWheelOnly = true;
+      wheelNeedsPassword = false;
     };
   };
 }

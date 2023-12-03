@@ -13,13 +13,12 @@ resource "null_resource" "nix_config" {
 module "deploy_nixos" {
   source = "github.com/tomferon/terraform-nixos//deploy_nixos?ref=e96dd3edf70f5e10481037024a4ea5490996d18e"
   hermetic = true
-  target_user = "root"
+  target_user = var.nixos_user
   target_host = var.hydrogen_ip
   ssh_private_key = "-"
-  #ssh_agent = true
 
-  config_pwd           = "${path.module}/../../nix/server-configurations"
-  config               = <<-EOF
+  config_pwd = "${path.module}/../../nix/server-configurations"
+  config = <<-EOF
   (builtins.getFlake (builtins.toString ./.)).outputs.packages.hydrogen {
     servers = {
       hydrogen = {

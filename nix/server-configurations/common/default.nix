@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   imports = [
@@ -7,4 +7,10 @@
     ./servers.nix
     ./users.nix
   ];
+
+  config = {
+    environment.systemPackages = with pkgs; [
+      jq
+    ];
+  };
 }
