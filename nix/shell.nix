@@ -7,6 +7,5 @@ pkgs.mkShell {
     kustomize
     google-cloud-sdk
     opentofu
-    rnix-lsp
   ];
 }

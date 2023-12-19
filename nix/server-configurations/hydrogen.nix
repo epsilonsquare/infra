@@ -4,7 +4,7 @@ opentofu: { ... }:
   imports = [
     (import ./hardware-configurations/hydrogen.nix)
     (import ./common)
-    # (import ./vpn)
+    (import ./vpn)
     # (import ./pki)
     # (import ./kubernetes)
   ];

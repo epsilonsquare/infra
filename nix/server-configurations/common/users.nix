@@ -12,7 +12,7 @@ let
       ];
 
       vpnIP = "10.128.128.1";
-      vpnPublicKey = "";
+      vpnPublicKey = "aRc4ie2HWkLpyOaDrR+ApR9Czokf6MY+2cjFr355vm0=";
     };
   };
 

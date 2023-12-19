@@ -6,6 +6,11 @@ terraform {
       source = "registry.terraform.io/hashicorp/google"
       version = "5.7.0"
     }
+
+    wireguard = {
+      source = "registry.terraform.io/OJFord/wireguard"
+      version = "0.2.2"
+    }
   }
 
   backend "gcs" {

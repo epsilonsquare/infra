@@ -10,6 +10,12 @@ resource "null_resource" "nix_config" {
   }
 }
 
+resource "wireguard_asymmetric_key" "hydrogen" {}
+
+output "hydrogen_wireguard_public_key" {
+  value = wireguard_asymmetric_key.hydrogen.public_key
+}
+
 module "deploy_nixos" {
   source = "github.com/tomferon/terraform-nixos//deploy_nixos?ref=e96dd3edf70f5e10481037024a4ea5490996d18e"
   hermetic = true
@@ -22,7 +28,7 @@ module "deploy_nixos" {
   (builtins.getFlake (builtins.toString ./.)).outputs.packages.hydrogen {
     servers = {
       hydrogen = {
-        vpnPublicKey = "PLACEHOLDER";
+        vpnPublicKey = "${wireguard_asymmetric_key.hydrogen.public_key}";
         ipAddress = "${var.hydrogen_ip}";
       };
     };
@@ -30,6 +36,7 @@ module "deploy_nixos" {
 EOF
 
   keys = {
+    wireguard_private_key = wireguard_asymmetric_key.hydrogen.private_key
   }
 
   # Redeploy when any file changes in nix/server-configurations.
