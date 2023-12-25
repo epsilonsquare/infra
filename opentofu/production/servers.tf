@@ -10,11 +10,87 @@ resource "null_resource" "nix_config" {
   }
 }
 
-resource "wireguard_asymmetric_key" "hydrogen" {}
-
-output "hydrogen_wireguard_public_key" {
-  value = wireguard_asymmetric_key.hydrogen.public_key
+resource "tls_private_key" "ca" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P521"
 }
+
+resource "tls_private_key" "service_account" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P521"
+}
+
+resource "tls_private_key" "kube_admin" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P521"
+}
+
+resource "tls_self_signed_cert" "ca" {
+  private_key_pem = tls_private_key.ca.private_key_pem
+
+  subject {
+    common_name  = "cluster.local"
+    organization = "EpsilonSquare"
+  }
+
+  validity_period_hours = 24 * 365 * 2
+
+  is_ca_certificate = true
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "crl_signing",
+    "cert_signing",
+  ]
+}
+
+resource "tls_cert_request" "service_account" {
+  private_key_pem = tls_private_key.service_account.private_key_pem
+
+  subject {
+    common_name  = "cluster.local"
+    organization = "system:masters"
+  }
+}
+
+resource "tls_cert_request" "kube_admin" {
+  private_key_pem = tls_private_key.kube_admin.private_key_pem
+
+  subject {
+    common_name  = "cluster.local"
+    organization = "system:masters"
+  }
+}
+
+resource "tls_locally_signed_cert" "service_account" {
+  cert_request_pem   = tls_cert_request.service_account.cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
+
+  validity_period_hours = 24 * 365 * 2
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "crl_signing",
+    "cert_signing",
+  ]
+}
+
+resource "tls_locally_signed_cert" "kube_admin" {
+  cert_request_pem   = tls_cert_request.kube_admin.cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
+
+  validity_period_hours = 24 * 365 * 2
+
+  allowed_uses = [
+    "client_auth",
+  ]
+}
+
+resource "wireguard_asymmetric_key" "hydrogen" {}
 
 module "deploy_nixos" {
   source = "github.com/tomferon/terraform-nixos//deploy_nixos?ref=e96dd3edf70f5e10481037024a4ea5490996d18e"
@@ -37,6 +113,12 @@ EOF
 
   keys = {
     wireguard_private_key = wireguard_asymmetric_key.hydrogen.private_key
+    "ca-key.pem" = tls_private_key.ca.private_key_pem
+    "ca.pem" = tls_self_signed_cert.ca.cert_pem
+    "kube-service-account-key.pem" = tls_private_key.service_account.private_key_pem
+    "kube-service-account.pem" = tls_locally_signed_cert.service_account.cert_pem
+    "kube-admin-key.pem" = tls_private_key.kube_admin.private_key_pem
+    "kube-admin.pem" = tls_locally_signed_cert.kube_admin.cert_pem
   }
 
   # Redeploy when any file changes in nix/server-configurations.

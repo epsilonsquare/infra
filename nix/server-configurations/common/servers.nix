@@ -3,6 +3,7 @@
 let
   cfg = config.epsilonsquare;
 
+
   servers = {
     hydrogen = {
       realIP = cfg.epsilonsquare.opentofu.hydrogen_ip;

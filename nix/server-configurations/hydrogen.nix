@@ -5,8 +5,8 @@ opentofu: { ... }:
     (import ./hardware-configurations/hydrogen.nix)
     (import ./common)
     (import ./vpn)
-    # (import ./pki)
-    # (import ./kubernetes)
+    (import ./pki)
+    (import ./kubernetes)
   ];
 
   config = {
