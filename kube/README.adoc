@@ -8,9 +8,9 @@ Kubernetes cluster to deploy ArgoCD as follows.
 
 [source,bash]
 ----
-kustomize build kube/argocd | kubectl --context=e2-admin apply -f -
+kustomize build kube/argocd | kubectl --context=e2 apply -f -
 ----
 
-TODO: Ideally, this should be done by Terraform but that implies connecting to
+TODO: Ideally, this should be done by OpenTofu but that implies connecting to
 the VPN or using an SSH tunnel since the Kube apiserver is not accessible from
 outside.

@@ -158,6 +158,7 @@ in
         serviceAccountKeyFile = "/var/keys/kube-service-account-key.pem";
         serviceAccountSigningKeyFile = "/var/keys/kube-service-account-key.pem";
         allowPrivileged = true;
+        serviceClusterIpRange = "10.0.0.0/16";
 
         extraOpts = ''
           --service-node-port-range=1-65535
@@ -210,6 +211,8 @@ in
       addons = {
         dns = {
           enable = true;
+          clusterDomain = "cluster.local";
+          clusterIp = "10.0.0.254";
           replicas = 1; # FIXME: Bump to 3 on a full-fledged cluster.
         };
       };
@@ -221,29 +224,29 @@ in
     # was moved to the PKI module even though it's not related to it. This
     # breaks CoreDNS (deployed by the addon manager) when the PKI module is not
     # enabled. The following code fixes the issue.
-    # systemd.services.kube-addon-manager = {
-    #   environment.KUBECTL_OPTS =
-    #     builtins.concatStringsSep " " [
-    #       "--server https://${cfg.server.vpnIP}:4443"
-    #       "--certificate-authority ${caFile}"
-    #       "--client-certificate ${mkCertPath "kube-addon-manager"}"
-    #       "--client-key ${mkCertPath "kube-addon-manager-key"}"
-    #     ];
-    #   serviceConfig.PermissionsStartOnly = true;
-    #   preStart = with pkgs;
-    #     let
-    #       files =
-    #         lib.mapAttrsToList
-    #           (n: v: writeText "${n}.json" (builtins.toJSON v))
-    #           config.services.kubernetes.addonManager.bootstrapAddons;
-    #     in
-    #     ''
-    #       ${pkgs.sudo}/bin/sudo -u kubernetes -g kubernetes \
-    #         ${kubectl}/bin/kubectl $KUBECTL_OPTS \
-    #         apply -f ${builtins.concatStringsSep " \\\n -f " files}
-    #     '';
-    # };
-    #
+    systemd.services.kube-addon-manager = {
+      environment.KUBECTL_OPTS =
+        builtins.concatStringsSep " " [
+          "--server https://${cfg.server.vpnIP}:4443"
+          "--certificate-authority ${caFile}"
+          "--client-certificate ${mkCertPath "kube-addon-manager"}"
+          "--client-key ${mkCertPath "kube-addon-manager-key"}"
+        ];
+      serviceConfig.PermissionsStartOnly = true;
+      preStart = with pkgs;
+        let
+          files =
+            lib.mapAttrsToList
+              (n: v: writeText "${n}.json" (builtins.toJSON v))
+              config.services.kubernetes.addonManager.bootstrapAddons;
+        in
+        ''
+          ${pkgs.sudo}/bin/sudo -u kubernetes -g kubernetes \
+            ${kubectl}/bin/kubectl $KUBECTL_OPTS \
+            apply -f ${builtins.concatStringsSep " \\\n -f " files}
+        '';
+    };
+
     services.certmgr = {
       enable = true;
       specs = certificates;
@@ -262,11 +265,6 @@ in
         StartLimitIntervalSec = "1";
         StartLimitBurst = "5";
       };
-
-      # FIXME: This should be fixed in NixOS/nixpkgs.
-      # environment = {
-      #   ETCD_PEER_CLIENT_CERT_AUTH = "1";
-      # };
     };
 
     systemd.services.etcd-init = mkIf isInitNode {

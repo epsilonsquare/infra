@@ -92,6 +92,7 @@ in
         nodeIp = cfg.server.vpnIP;
         tlsCertFile = mkCertPath "kubelet";
         tlsKeyFile = mkCertPath "kubelet-key";
+        clusterDns = config.services.kubernetes.addons.dns.clusterIp;
 
         extraOpts = "--pod-cidr ${cfg.server.kubernetes.podCidr}";
 

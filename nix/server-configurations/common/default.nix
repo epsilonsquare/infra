@@ -11,6 +11,7 @@
   config = {
     environment.systemPackages = with pkgs; [
       jq
+      mosh
     ];
   };
 }

@@ -10,6 +10,10 @@ gcloud --project ${GOOGLE_PROJECT} \
   --iam-account opentofu@${GOOGLE_PROJECT}.iam.gserviceaccount.com
 ```
 
+```
+gh auth login
+```
+
 == OpenTofu state
 
 The state is synced on a bucket on GCP. This is set up by the configuration in

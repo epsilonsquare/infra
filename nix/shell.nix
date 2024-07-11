@@ -6,6 +6,7 @@ pkgs.mkShell {
     kubectl
     kustomize
     google-cloud-sdk
+    github-cli
     opentofu
   ];
 }
