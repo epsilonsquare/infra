@@ -10,6 +10,7 @@
 
   config = {
     environment.systemPackages = with pkgs; [
+      bash
       jq
       mosh
     ];

@@ -43,32 +43,12 @@ in
 
     boot.kernel.sysctl."fs.inotify.max_user_instances" = 1048576;
 
-    # The first part of the settings come from
-    # NixOS/nixpkgs:nixos/modules/services/cluster/kubernetes/default.nix
-    virtualisation.containerd.configFile = pkgs.writeText "containerd.toml" ''
-      version = 2
-      root = "/var/lib/containerd"
-      state = "/run/containerd"
-      oom_score = 0
-      [grpc]
-        address = "/run/containerd/containerd.sock"
-      [plugins."io.containerd.grpc.v1.cri"]
-        sandbox_image = "pause:latest"
-      [plugins."io.containerd.grpc.v1.cri".cni]
-        bin_dir = "/opt/cni/bin"
-        max_conf_num = 0
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-        runtime_type = "io.containerd.runc.v2"
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes."io.containerd.runc.v2".options]
-        SystemdCgroup = true
-
-      [plugins."io.containerd.grpc.v1.cri".registry]
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-            endpoint = ["https://registry-1.docker.io"]
-          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."10.0.0.253:5000"]
-            endpoint = ["http://10.0.0.253:5000"]
-    '';
+    virtualisation.containerd.settings.plugins = {
+      "io.containerd.cri.v1.images".registry.mirrors = {
+        "docker.io" = { endpoint = ["https://registry-1.docker.io"]; };
+        "10.0.0.253:5000" = { endpoint = ["http://10.0.0.253:5000"]; };
+      };
+    };
 
     services.kubernetes = {
       roles = ["node"];
@@ -94,22 +74,25 @@ in
         tlsKeyFile = mkCertPath "kubelet-key";
         clusterDns = config.services.kubernetes.addons.dns.clusterIp;
 
+        # FIXME: --pod-cidr is deprecated. See logs.
         extraOpts = "--pod-cidr ${cfg.server.kubernetes.podCidr}";
 
-        cni.config = [{
-          cniVersion = "0.3.1";
-          name = "kube";
-          type = "bridge";
-          bridge = "kube0";
-          isDefaultGateway = true;
-          forceAddress = false;
-          ipMasq = true;
-          hairpinMode = true;
-          ipam = {
-            type = "host-local";
-            subnet = cfg.server.kubernetes.podCidr;
-          };
-        }];
+        cni.config = [
+          {
+            cniVersion = "0.3.1";
+            name = "kube";
+            type = "bridge";
+            bridge = "kube0";
+            isDefaultGateway = true;
+            forceAddress = false;
+            ipMasq = true;
+            hairpinMode = true;
+            ipam = {
+              type = "host-local";
+              subnet = cfg.server.kubernetes.podCidr;
+            };
+          }
+        ];
 
         kubeconfig = {
           inherit caFile;
@@ -136,6 +119,9 @@ in
       enable = true;
       specs = certificates;
     };
+    # Without the following line, it certmgr-pre-start fails. This wasn't needed
+    # before and it will probably be fixed in the future, so this should be revisited.
+    systemd.services.certmgr.path = [pkgs.bash];
 
     networking.firewall.allowedTCPPorts = [80 443];
 

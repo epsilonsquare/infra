@@ -57,6 +57,7 @@ mount -t btrfs -o subvol=nix /dev/sdb1 /mnt/nix
 mkdir -p /mnt/var/openebs/local
 mount -t btrfs -o subvol=openebs-local /dev/sdb1 /mnt/var/openebs/local
 mkdir /mnt/boot
+swapoff -a
 # If UEFI:
 modprobe msdos
 mount -t msdos /dev/sdb2 /mnt/boot

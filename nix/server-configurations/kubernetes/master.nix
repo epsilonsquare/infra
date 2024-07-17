@@ -259,7 +259,6 @@ in
     # This unit should restart until it works.
     systemd.services.etcd = {
       serviceConfig = {
-        RestartSec = "10";
         Restart = "always";
         # Never trigger the start limit.
         StartLimitIntervalSec = "1";

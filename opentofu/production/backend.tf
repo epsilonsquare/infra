@@ -26,6 +26,11 @@ terraform {
       source = "registry.terraform.io/integrations/github"
       version = "5.42.0"
     }
+
+    random = {
+      source = "registry.terraform.io/hashicorp/random"
+      version = "3.6.2"
+    }
   }
 
   backend "gcs" {

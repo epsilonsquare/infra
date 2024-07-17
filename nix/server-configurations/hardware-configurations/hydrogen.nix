@@ -17,38 +17,36 @@
   boot.loader.grub.device = "/dev/sdb";
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/075cb345-b73b-4ea7-a164-5e97ee641904";
+    { device = "/dev/disk/by-uuid/78a08435-0c7d-4035-8be9-94f59147a36f";
       fsType = "btrfs";
       options = [ "subvol=root" ];
     };
 
-  fileSystems."/var" =
-    { device = "/dev/disk/by-uuid/075cb345-b73b-4ea7-a164-5e97ee641904";
-      fsType = "btrfs";
-      options = [ "subvol=var" ];
-    };
-
-  fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/075cb345-b73b-4ea7-a164-5e97ee641904";
-      fsType = "btrfs";
-      options = [ "subvol=home" ];
-    };
-
   fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/075cb345-b73b-4ea7-a164-5e97ee641904";
+    { device = "/dev/disk/by-uuid/78a08435-0c7d-4035-8be9-94f59147a36f";
       fsType = "btrfs";
       options = [ "subvol=nix" ];
     };
 
+  fileSystems."/home" =
+    { device = "/dev/disk/by-uuid/78a08435-0c7d-4035-8be9-94f59147a36f";
+      fsType = "btrfs";
+      options = [ "subvol=home" ];
+    };
+
+  fileSystems."/var" =
+    { device = "/dev/disk/by-uuid/78a08435-0c7d-4035-8be9-94f59147a36f";
+      fsType = "btrfs";
+      options = [ "subvol=var" ];
+    };
+
   fileSystems."/var/openebs/local" =
-    { device = "/dev/disk/by-uuid/075cb345-b73b-4ea7-a164-5e97ee641904";
+    { device = "/dev/disk/by-uuid/78a08435-0c7d-4035-8be9-94f59147a36f";
       fsType = "btrfs";
       options = [ "subvol=openebs-local" ];
     };
 
-  swapDevices =
-    [
-    ];
+  swapDevices = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's

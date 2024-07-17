@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+
+# From https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+resources:
+- namespace.yaml
+- install.yaml
+- app-of-apps.yaml
+
+patches:
+- path: add-repositories-to-config.yaml
+- target:
+    group: apps
+    kind: Deployment
+    name: argocd-server
+    version: v1
+  patch: |-
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --disable-auth
+

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+data:
+  repositories: |
+    - url: git@github.com:epsilonsquare/infra.git
+      sshPrivateKeySecret:
+        name: infra-repository-ssh-key
+        key: key
+    - url: git@github.com:epsilonsquare/chunked.git
+      sshPrivateKeySecret:
+        name: chunked-repository-ssh-key
+        key: key

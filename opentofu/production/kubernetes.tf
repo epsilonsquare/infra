@@ -4,19 +4,19 @@ data "kustomization_build" "argocd" {
 }
 
 resource "kustomization_resource" "argocd0" {
-  for_each = one(data.kustomization_build.argocd[*].ids_prio[0])
+  for_each = coalesce(one(data.kustomization_build.argocd[*].ids_prio[0]), toset([]))
   manifest = one(data.kustomization_build.argocd[*].manifests[each.value])
   depends_on = [module.deploy_nixos]
 }
 
 resource "kustomization_resource" "argocd1" {
-  for_each = one(data.kustomization_build.argocd[*].ids_prio[1])
+  for_each = coalesce(one(data.kustomization_build.argocd[*].ids_prio[1]), toset([]))
   manifest = one(data.kustomization_build.argocd[*].manifests[each.value])
   depends_on = [kustomization_resource.argocd0]
 }
 
 resource "kustomization_resource" "argocd2" {
-  for_each = one(data.kustomization_build.argocd[*].ids_prio[2])
+  for_each = coalesce(one(data.kustomization_build.argocd[*].ids_prio[2]), toset([]))
   manifest = one(data.kustomization_build.argocd[*].manifests[each.value])
   depends_on = [kustomization_resource.argocd1]
 }

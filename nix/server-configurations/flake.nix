@@ -1,7 +1,7 @@
 {
   description = "Configurations for dedicated servers running NixOS";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixpkgs-unstable;
+  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
 
   outputs = { self, nixpkgs }:
     let

@@ -13,15 +13,21 @@ rec {
     , group ? owner
     , mode ? "0600"
     , otherHosts ? []
+    , keyUsages ? ["any"]
     }:
     let
+      # See https://github.com/cloudflare/certmgr#certificate-specs.
       value = {
         inherit service action;
         authority = {
-          remote = "http://127.0.0.1:8888";
+          remote = "https://127.0.0.1:8888";
+          root_ca = "/var/keys/ca.pem";
+          profile = "default";
+          auth_key_file = "/var/keys/cfssl-auth-token";
         };
         certificate = {
           path = mkCertPath name;
+          key_usages = keyUsages;
         };
         private_key = {
           path = mkCertPath "${name}-key";

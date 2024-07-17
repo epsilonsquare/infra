@@ -15,6 +15,11 @@ resource "tls_private_key" "ca" {
   ecdsa_curve = "P521"
 }
 
+resource "tls_private_key" "cfssl" {
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P521"
+}
+
 resource "tls_private_key" "service_account" {
   algorithm   = "ECDSA"
   ecdsa_curve = "P521"
@@ -45,6 +50,19 @@ resource "tls_self_signed_cert" "ca" {
   ]
 }
 
+resource "tls_cert_request" "cfssl" {
+  private_key_pem = tls_private_key.cfssl.private_key_pem
+
+  subject {
+    common_name  = "cfssl"
+    organization = "cfssl"
+  }
+
+  ip_addresses = [
+    "127.0.0.1",
+  ]
+}
+
 resource "tls_cert_request" "service_account" {
   private_key_pem = tls_private_key.service_account.private_key_pem
 
@@ -63,6 +81,18 @@ resource "tls_cert_request" "kube_admin" {
   }
 }
 
+resource "tls_locally_signed_cert" "cfssl" {
+  cert_request_pem   = tls_cert_request.cfssl.cert_request_pem
+  ca_private_key_pem = tls_private_key.ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.ca.cert_pem
+
+  validity_period_hours = 24 * 365 * 2
+
+  allowed_uses = [
+    "server_auth",
+  ]
+}
+
 resource "tls_locally_signed_cert" "service_account" {
   cert_request_pem   = tls_cert_request.service_account.cert_request_pem
   ca_private_key_pem = tls_private_key.ca.private_key_pem
@@ -71,10 +101,7 @@ resource "tls_locally_signed_cert" "service_account" {
   validity_period_hours = 24 * 365 * 2
 
   allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "crl_signing",
-    "cert_signing",
+    "client_auth",
   ]
 }
 
@@ -88,6 +115,13 @@ resource "tls_locally_signed_cert" "kube_admin" {
   allowed_uses = [
     "client_auth",
   ]
+}
+
+# OpenTofu doesn't provide an easy way to generate a random string and hex-encode it.
+# Instead, we generate a random string and hash it, since the resulting hash can be
+# seen as a valid hex-encoded string.
+resource "random_string" "cfssl_auth_token_seed" {
+  length = 32
 }
 
 resource "wireguard_asymmetric_key" "hydrogen" {}
@@ -115,6 +149,9 @@ EOF
     wireguard_private_key = wireguard_asymmetric_key.hydrogen.private_key
     "ca-key.pem" = tls_private_key.ca.private_key_pem
     "ca.pem" = tls_self_signed_cert.ca.cert_pem
+    "cfssl-key.pem" = tls_private_key.cfssl.private_key_pem
+    "cfssl.pem" = tls_locally_signed_cert.cfssl.cert_pem
+    "cfssl-auth-token" = sha256(random_string.cfssl_auth_token_seed.result)
     "kube-service-account-key.pem" = tls_private_key.service_account.private_key_pem
     "kube-service-account.pem" = tls_locally_signed_cert.service_account.cert_pem
     "kube-admin-key.pem" = tls_private_key.kube_admin.private_key_pem
