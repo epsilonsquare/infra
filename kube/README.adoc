@@ -6,11 +6,4 @@ Everything running on Kubernetes is deployed with ArgoCD except for ArgoCD
 itself. `kube/argocd/` contains a kustomization that can be applied to the
 Kubernetes cluster to deploy ArgoCD as follows.
 
-[source,bash]
-----
-kustomize build kube/argocd | kubectl --context=e2 apply -f -
-----
-
-TODO: Ideally, this should be done by OpenTofu but that implies connecting to
-the VPN or using an SSH tunnel since the Kube apiserver is not accessible from
-outside.
+This is done by OpenTofu.
