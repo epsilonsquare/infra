@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres-operator-helm-chart
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: charts/postgres-operator
+    repoURL: https://github.com/zalando/postgres-operator.git
+    targetRevision: v1.12.2
+    helm:
+      releaseName: po
+
+  destination:
+    namespace: postgres-operator
+    server: https://kubernetes.default.svc
+
+  syncPolicy:
+    automated:
+      prune: true
