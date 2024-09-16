@@ -1,0 +1,5 @@
+resources:
+- namespace.yaml
+- helm-chart-app.yaml
+- letsencrypt-staging.yaml
+- letsencrypt.yaml

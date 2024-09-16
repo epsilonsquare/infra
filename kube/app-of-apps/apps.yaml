@@ -81,3 +81,25 @@ spec:
   syncPolicy:
     automated:
       prune: true
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: kube/cert-manager
+    repoURL: git@github.com:epsilonsquare/infra.git
+    targetRevision: main
+  destination:
+    namespace: cert-manager
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+

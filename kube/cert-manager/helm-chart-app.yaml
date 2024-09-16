@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-helm-chart
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.15.3
+    helm:
+      # releaseName should not be cert-manager, otherwise ArgoCD thinks CRDs are
+      # part of both applications.argoproj.io for some reason.
+      releaseName: cert-manager-helm-chart
+      parameters:
+      - name: crds.enabled
+        value: "true"
+
+  destination:
+    namespace: cert-manager
+    server: https://kubernetes.default.svc
+
+  syncPolicy:
+    automated:
+      prune: true
