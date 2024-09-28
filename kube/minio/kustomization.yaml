@@ -1,0 +1,7 @@
+resources:
+- namespace.yaml
+- helm-chart-app.yaml
+# Generated with kubectl minio create tenant infrastructure \
+#   --servers X --volumes Y --storage-class openebs-hostpath -o
+# FIXME: Credentials should be changed and encrypted (with kustomize-sops?)
+- infrastructure-tenant.yaml

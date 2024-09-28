@@ -1,0 +1,12 @@
+namespace: argo
+
+resources:
+- namespace.yaml
+# From https://raw.githubusercontent.com/argoproj/argo-workflows/v3.5.11/manifests/namespace-install.yaml
+- install.yaml
+- github-service-account.yaml
+- nix-volumes.yaml
+
+patchesStrategicMerge:
+# - workflow-controller-configmap.yaml
+- fix-argo-role-binding.yaml
