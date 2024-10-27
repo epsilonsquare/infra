@@ -144,24 +144,3 @@ spec:
   syncPolicy:
     automated:
       prune: true
-
----
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: prometheus-operator
-  namespace: argocd
-  finalizers:
-  - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
-  source:
-    path: kube/prometheus-operator
-    repoURL: git@github.com:epsilonsquare/infra.git
-    targetRevision: main
-  destination:
-    namespace: prometheus-operator
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      prune: true
